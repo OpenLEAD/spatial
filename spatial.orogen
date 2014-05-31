@@ -1,0 +1,25 @@
+name "spatial"
+
+version "0.1"
+
+import_types_from "spatialTypes.hpp"
+
+import_types_from "iodrivers_base"
+import_types_from "base"
+
+task_context "Task" do
+
+    needs_configuration
+
+    property "config_value", "/std/string"
+
+
+    input_port "com_input", "/iodrivers_base/RawPacket"
+
+    output_port "com_output", "/iodrivers_base/RawPacket"
+    output_port "pose", "/base/Pose"
+    output_port "imu", "/base/samples/IMUSensors"
+
+    periodic 0.1
+end
+
