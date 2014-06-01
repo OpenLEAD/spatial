@@ -1,7 +1,7 @@
 /****************************************************************/
 /*                                                              */
 /*          Advanced Navigation Packet Protocol Library         */
-/*          C Language Dynamic Spatial SDK, Version 3.0         */
+/*          C Language Static Spatial SDK, Version 3.0          */
 /*   Copyright 2013, Xavier Orr, Advanced Navigation Pty Ltd    */
 /*                                                              */
 /****************************************************************/
@@ -27,7 +27,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
  
-#ifdef __cplusplus
+ #ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -563,7 +563,6 @@ typedef struct
     uint32_t primary_baud_rate;
     uint32_t gpio_1_2_baud_rate;
     uint32_t gpio_3_4_baud_rate;
-    uint32_t reserved;
 } baud_rates_packet_t;
 
 typedef enum
@@ -765,12 +764,12 @@ typedef struct
 } nmea_output_configuration_packet_t;
 
 int decode_acknowledge_packet(acknowledge_packet_t *acknowledge_packet, an_packet_t *an_packet);
-an_packet_t *encode_request_packet(uint8_t requested_packet_id);
+void encode_request_packet(an_packet_t *an_packet, uint8_t requested_packet_id);
 int decode_boot_mode_packet(boot_mode_packet_t *boot_mode_packet, an_packet_t *an_packet);
-an_packet_t *encode_boot_mode_packet(boot_mode_packet_t *boot_mode_packet);
+void encode_boot_mode_packet(an_packet_t *an_packet, boot_mode_packet_t *boot_mode_packet);
 int decode_device_information_packet(device_information_packet_t *device_information_packet, an_packet_t *an_packet);
-an_packet_t *encode_restore_factory_settings_packet();
-an_packet_t *encode_reset_packet();
+void encode_restore_factory_settings_packet(an_packet_t *an_packet);
+void encode_reset_packet(an_packet_t *an_packet);
 int decode_system_state_packet(system_state_packet_t *system_state_packet, an_packet_t *an_packet);
 int decode_unix_time_packet(unix_time_packet_t *unix_time_packet, an_packet_t *an_packet);
 int decode_formatted_time_packet(formatted_time_packet_t *formatted_time_packet, an_packet_t *an_packet);
@@ -796,52 +795,52 @@ int decode_dcm_orientation_packet(dcm_orientation_packet_t *dcm_orientation_pack
 int decode_angular_velocity_packet(angular_velocity_packet_t *angular_velocity_packet, an_packet_t *an_packet);
 int decode_angular_acceleration_packet(angular_acceleration_packet_t *angular_acceleration_packet, an_packet_t *an_packet);
 int decode_external_position_velocity_packet(external_position_velocity_packet_t *external_position_velocity_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_position_velocity_packet(external_position_velocity_packet_t *external_position_velocity_packet);
+void encode_external_position_velocity_packet(an_packet_t *an_packet, external_position_velocity_packet_t *external_position_velocity_packet);
 int decode_external_position_packet(external_position_packet_t *external_position_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_position_packet(external_position_packet_t *external_position_packet);
+void encode_external_position_packet(an_packet_t *an_packet, external_position_packet_t *external_position_packet);
 int decode_external_velocity_packet(external_velocity_packet_t *external_velocity_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_velocity_packet(external_velocity_packet_t *external_velocity_packet);
+void encode_external_velocity_packet(an_packet_t *an_packet, external_velocity_packet_t *external_velocity_packet);
 int decode_external_body_velocity_packet(external_body_velocity_packet_t *external_body_velocity_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_body_velocity_packet(external_body_velocity_packet_t *external_body_velocity_packet);
+void encode_external_body_velocity_packet(an_packet_t *an_packet, external_body_velocity_packet_t *external_body_velocity_packet);
 int decode_external_heading_packet(external_heading_packet_t *external_heading_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_heading_packet(external_heading_packet_t *external_heading_packet);
+void encode_external_heading_packet(an_packet_t *an_packet, external_heading_packet_t *external_heading_packet);
 int decode_running_time_packet(running_time_packet_t *running_time_packet, an_packet_t *an_packet);
 int decode_local_magnetics_packet(local_magnetics_packet_t *local_magnetics_packet, an_packet_t *an_packet);
 int decode_odometer_state_packet(odometer_state_packet_t *odometer_state_packet, an_packet_t *an_packet);
 int decode_external_time_packet(external_time_packet_t *external_time_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_time_packet(external_time_packet_t *external_time_packet);
+void encode_external_time_packet(an_packet_t *an_packet, external_time_packet_t *external_time_packet);
 int decode_external_depth_packet(external_depth_packet_t *external_depth_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_depth_packet(external_depth_packet_t *external_depth_packet);
+void encode_external_depth_packet(an_packet_t *an_packet, external_depth_packet_t *external_depth_packet);
 int decode_geoid_height_packet(geoid_height_packet_t *geoid_height_packet, an_packet_t *an_packet);
 int decode_external_pitot_pressure_packet(external_pitot_pressure_packet_t *external_pitot_pressure_packet, an_packet_t *an_packet);
-an_packet_t *encode_external_pitot_pressure_packet(external_pitot_pressure_packet_t *external_pitot_pressure_packet);
+void encode_external_pitot_pressure_packet(an_packet_t *an_packet, external_pitot_pressure_packet_t *external_pitot_pressure_packet);
 int decode_wind_estimation_packet(wind_estimation_packet_t *wind_estimation_packet, an_packet_t *an_packet);
 int decode_heave_packet(heave_packet_t *heave_packet, an_packet_t *an_packet);
 int decode_packet_timer_period_packet(packet_timer_period_packet_t *packet_timer_period_packet, an_packet_t *an_packet);
-an_packet_t *encode_packet_timer_period_packet(packet_timer_period_packet_t *packet_timer_period_packet);
+void encode_packet_timer_period_packet(an_packet_t *an_packet, packet_timer_period_packet_t *packet_timer_period_packet);
 int decode_packet_periods_packet(packet_periods_packet_t *packet_periods_packet, an_packet_t *an_packet);
-an_packet_t *encode_packet_periods_packet(packet_periods_packet_t *packet_periods_packet);
+void encode_packet_periods_packet(an_packet_t *an_packet, packet_periods_packet_t *packet_periods_packet);
 int decode_baud_rates_packet(baud_rates_packet_t *baud_rates_packet, an_packet_t *an_packet);
-an_packet_t *encode_baud_rates_packet(baud_rates_packet_t *baud_rates_packet);
+void encode_baud_rates_packet(an_packet_t *an_packet, baud_rates_packet_t *baud_rates_packet);
 int decode_sensor_ranges_packet(sensor_ranges_packet_t *sensor_ranges_packet, an_packet_t *an_packet);
-an_packet_t *encode_sensor_ranges_packet(sensor_ranges_packet_t *sensor_ranges_packet);
+void encode_sensor_ranges_packet(an_packet_t *an_packet, sensor_ranges_packet_t *sensor_ranges_packet);
 int decode_installation_alignment_packet(installation_alignment_packet_t *installation_alignment_packet, an_packet_t *an_packet);
-an_packet_t *encode_installation_alignment_packet(installation_alignment_packet_t *installation_alignment_packet);
+void encode_installation_alignment_packet(an_packet_t *an_packet, installation_alignment_packet_t *installation_alignment_packet);
 int decode_filter_options_packet(filter_options_packet_t *filter_options_packet, an_packet_t *an_packet);
-an_packet_t *encode_filter_options_packet(filter_options_packet_t *filter_options_packet);
+void encode_filter_options_packet(an_packet_t *an_packet, filter_options_packet_t *filter_options_packet);
 int decode_gpio_configuration_packet(gpio_configuration_packet_t *gpio_configuration_packet, an_packet_t *an_packet);
-an_packet_t *encode_gpio_configuration_packet(gpio_configuration_packet_t *gpio_configuration_packet);
+void encode_gpio_configuration_packet(an_packet_t *an_packet, gpio_configuration_packet_t *gpio_configuration_packet);
 int decode_magnetic_calibration_values_packet(magnetic_calibration_values_packet_t *magnetic_calibration_values_packet, an_packet_t *an_packet);
-an_packet_t *encode_magnetic_calibration_values_packet(magnetic_calibration_values_packet_t *magnetic_calibration_values_packet);
-an_packet_t *encode_magnetic_calibration_configuration_packet(magnetic_calibration_configuration_packet_t *magnetic_calibration_configuration_packet);
+void encode_magnetic_calibration_values_packet(an_packet_t *an_packet, magnetic_calibration_values_packet_t *magnetic_calibration_values_packet);
+void encode_magnetic_calibration_configuration_packet(an_packet_t *an_packet, magnetic_calibration_configuration_packet_t *magnetic_calibration_configuration_packet);
 int decode_magnetic_calibration_status_packet(magnetic_calibration_status_packet_t *magnetic_calibration_status_packet, an_packet_t *an_packet);
 int decode_odometer_configuration_packet(odometer_configuration_packet_t *odometer_configuration_packet, an_packet_t *an_packet);
-an_packet_t *encode_odometer_configuration_packet(odometer_configuration_packet_t *odometer_configuration_packet);
-an_packet_t *encode_zero_alignment_packet(zero_alignment_packet_t *zero_alignment_packet);
+void encode_odometer_configuration_packet(an_packet_t *an_packet, odometer_configuration_packet_t *odometer_configuration_packet);
+void encode_zero_alignment_packet(an_packet_t *an_packet, zero_alignment_packet_t *zero_alignment_packet);
 int decode_heave_offset_packet(heave_offset_packet_t *heave_offset_packet, an_packet_t *an_packet);
-an_packet_t *encode_heave_offset_packet(heave_offset_packet_t *heave_offset_packet);
+void encode_heave_offset_packet(an_packet_t *an_packet, heave_offset_packet_t *heave_offset_packet);
 int decode_nmea_output_configuration_packet(nmea_output_configuration_packet_t *nmea_output_configuration_packet, an_packet_t *an_packet);
-an_packet_t *encode_nmea_output_configuration_packet(nmea_output_configuration_packet_t *nmea_output_configuration_packet);
+void encode_nmea_output_configuration_packet(an_packet_t *an_packet, nmea_output_configuration_packet_t *nmea_output_configuration_packet);
 
 #ifdef __cplusplus
 }

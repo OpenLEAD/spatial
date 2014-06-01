@@ -8,7 +8,18 @@
  * which case you do not need this file
  */
 
+#include <base/time.h>
+#include <base/angle.h>
+
 namespace spatial {
+
+struct EulerAngles{
+	base::Time time;
+	base::Angle roll;
+	base::Angle yaw;
+	base::Angle pitch;
+};
+
 }
 
 #endif

@@ -1,7 +1,7 @@
 /****************************************************************/
 /*                                                              */
 /*          Advanced Navigation Packet Protocol Library         */
-/*          C Language Dynamic Spatial SDK, Version 3.0         */
+/*          C Language Static Spatial SDK, Version 3.0          */
 /*   Copyright 2013, Xavier Orr, Advanced Navigation Pty Ltd    */
 /*                                                              */
 /****************************************************************/
@@ -27,7 +27,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include "an_packet_protocol.h"
@@ -54,30 +53,7 @@ uint16_t calculate_crc16(const void *data, uint16_t length)
  */
 uint8_t calculate_header_lrc(uint8_t *data)
 {
-	return ((data[0] + data[1] + data[2] + data[3]) ^ 0xFF) + 1;
-}
-
-/*
- * Function to dynamically allocate an an_packet
- */
-an_packet_t *an_packet_allocate(uint8_t length, uint8_t id)
-{
-	an_packet_t *an_packet = malloc(sizeof(an_packet_t) + length * sizeof(uint8_t));
-	if (an_packet != NULL)
-	{
-		an_packet->id = id;
-		an_packet->length = length;
-	}
-	return an_packet;
-}
-
-/*
- * Function to free an an_packet
- */
-void an_packet_free(an_packet_t **an_packet)
-{
-	free(*an_packet);
-	*an_packet = NULL;
+    return ((data[0] + data[1] + data[2] + data[3])^0xFF) + 1;
 }
 
 /*
@@ -91,13 +67,15 @@ void an_decoder_initialise(an_decoder_t *an_decoder)
 
 /*
  * Function to decode an_packets from raw data
- * Returns a pointer to the packet decoded or NULL if no packet was decoded
+ * To fill buffer set an_packet to NULL
+ * To decode packets set buffer to NULL and buffer_length to zero
+ * returns TRUE (1) if a packet was decoded or FALSE (0) if no packet was decoded
  */
-an_packet_t *an_packet_decode(an_decoder_t *an_decoder)
+uint8_t an_packet_decode(an_decoder_t *an_decoder, an_packet_t *an_packet)
 {
 	uint16_t decode_iterator = 0;
-	an_packet_t *an_packet = NULL;
-	uint8_t header_lrc, id, length;
+	uint8_t packet_decoded = FALSE;
+	uint8_t header_lrc;
 	uint16_t crc;
 
 	while (decode_iterator + AN_PACKET_HEADER_SIZE <= an_decoder->buffer_length)
@@ -105,26 +83,23 @@ an_packet_t *an_packet_decode(an_decoder_t *an_decoder)
 		header_lrc = an_decoder->buffer[decode_iterator++];
 		if (header_lrc == calculate_header_lrc(&an_decoder->buffer[decode_iterator]))
 		{
-			id = an_decoder->buffer[decode_iterator++];
-			length = an_decoder->buffer[decode_iterator++];
+			an_packet->id = an_decoder->buffer[decode_iterator++];
+			an_packet->length = an_decoder->buffer[decode_iterator++];
 			crc = an_decoder->buffer[decode_iterator++];
 			crc |= an_decoder->buffer[decode_iterator++] << 8;
 
-			if (decode_iterator + length > an_decoder->buffer_length)
+			if (decode_iterator + an_packet->length > an_decoder->buffer_length)
 			{
 				decode_iterator -= AN_PACKET_HEADER_SIZE;
 				break;
 			}
 
-			if (crc == calculate_crc16(&an_decoder->buffer[decode_iterator], length))
+			if (crc == calculate_crc16(&an_decoder->buffer[decode_iterator], an_packet->length))
 			{
-				an_packet = an_packet_allocate(length, id);
-				if (an_packet != NULL)
-				{
-					memcpy(an_packet->header, &an_decoder->buffer[decode_iterator - AN_PACKET_HEADER_SIZE], AN_PACKET_HEADER_SIZE * sizeof(uint8_t));
-					memcpy(an_packet->data, &an_decoder->buffer[decode_iterator], length * sizeof(uint8_t));
-				}
-				decode_iterator += length;
+				packet_decoded = TRUE;
+				memcpy(an_packet->header, &an_decoder->buffer[decode_iterator - AN_PACKET_HEADER_SIZE], AN_PACKET_HEADER_SIZE * sizeof(uint8_t));
+				memcpy(an_packet->data, &an_decoder->buffer[decode_iterator], an_packet->length * sizeof(uint8_t));
+				decode_iterator += an_packet->length;
 				break;
 			}
 			else
@@ -144,7 +119,7 @@ an_packet_t *an_packet_decode(an_decoder_t *an_decoder)
 	}
 	else an_decoder->buffer_length = 0;
 
-	return an_packet;
+	return packet_decoded;
 }
 
 /*
@@ -155,8 +130,7 @@ void an_packet_encode(an_packet_t *an_packet)
 	uint16_t crc;
 	an_packet->header[1] = an_packet->id;
 	an_packet->header[2] = an_packet->length;
-	crc = calculate_crc16(an_packet->data, an_packet->length);
-	memcpy(&an_packet->header[3], &crc, sizeof(uint16_t));
-	an_packet->header[0] = calculate_header_lrc(&an_packet->header[1]);
+    crc = calculate_crc16(an_packet->data, an_packet->length);
+    memcpy(&an_packet->header[3], &crc, sizeof(uint16_t));
+    an_packet->header[0] = calculate_header_lrc(&an_packet->header[1]);
 }
-

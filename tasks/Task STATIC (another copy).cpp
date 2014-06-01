@@ -49,9 +49,9 @@ void Task::updateHook()
 
 	int k = 0;
 	
-	if(_com_input.read(rawpacket)){
+	while (_com_input.read(newpacket) == RTT::NewData){
 			RTT::log(RTT::Warning) << "NEW DATA " << RTT::endlog();
-		//rawpacket.data.insert( rawpacket.data.end(), newpacket.data.begin(), newpacket.data.end() );
+		rawpacket.data.insert( rawpacket.data.end(), newpacket.data.begin(), newpacket.data.end() );
 		data_count = 0;
 		
 		int rawpacketsize = rawpacket.data.size();
@@ -69,14 +69,12 @@ void Task::updateHook()
 			/* fill the decode buffer with the data */
 			memcpy(an_decoder_pointer(&an_decoder), &rawpacket.data[data_count], bytes_to_copy*sizeof(uint8_t));
 			an_decoder_increment(&an_decoder, bytes_to_copy);
-			
-			/* increase the iterator by the number of bytes copied */
-			data_count += bytes_to_copy;
+
 
 			/* decode all the packets in the buffer */
 			while (an_packet_decode(&an_decoder, &an_packet))
 			{
-				//rawpacket.data.erase(rawpacket.data.begin(),rawpacket.data.begin()+an_packet_size(&an_packet));
+				rawpacket.data.erase(rawpacket.data.begin(),rawpacket.data.begin()+an_packet_size(&an_packet));
 				RTT::log(RTT::Warning) << "(an_packet = an_packet_decode(&an_decoder)) != NULL" << RTT::endlog();
 				if (an_packet.id == packet_id_system_state) /* system state packet */
 				{

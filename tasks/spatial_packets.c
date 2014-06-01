@@ -1,7 +1,7 @@
 /****************************************************************/
 /*                                                              */
 /*          Advanced Navigation Packet Protocol Library         */
-/*          C Language Dynamic Spatial SDK, Version 3.0         */
+/*          C Language Static Spatial SDK, Version 3.0          */
 /*   Copyright 2013, Xavier Orr, Advanced Navigation Pty Ltd    */
 /*                                                              */
 /****************************************************************/
@@ -49,18 +49,16 @@
  * printf("acknowledge id %d with result %d\n", acknowledge_packet.packet_id, acknowledge_packet.acknowledge_result);
  *
  * Encode functions take a type specific structure and turn it into an
- * an_packet_t. Encode functions are used when sending packets. Don't
- * forget to free the returned packet with an_packet_free().
+ * an_packet_t. Encode functions are used when sending packets.
  *
  * Example encode
  *
- * an_packet_t *an_packet;
+ * an_packet_t an_packet;
  * boot_mode_packet_t boot_mode_packet;
  * ...
  * boot_mode_packet.boot_mode = boot_mode_bootloader;
- * an_packet = encode_boot_mode_packet(&boot_mode_packet);
- * serial_port_transmit(an_packet_pointer(an_packet), an_packet_size(an_packet));
- * an_packet_free(&an_packet);
+ * encode_boot_mode_packet(&an_packet, &boot_mode_packet);
+ * serial_port_transmit(an_packet_pointer(&an_packet), an_packet_size(&an_packet));
  *
  */
 
@@ -76,11 +74,11 @@ int decode_acknowledge_packet(acknowledge_packet_t *acknowledge_packet, an_packe
 	else return 1;
 }
 
-an_packet_t *encode_request_packet(uint8_t requested_packet_id)
+void encode_request_packet(an_packet_t *an_packet, uint8_t requested_packet_id)
 {
-	an_packet_t *an_packet = an_packet_allocate(1, packet_id_request);
+	an_packet->id = packet_id_request;
+	an_packet->length = 1;
 	an_packet->data[0] = requested_packet_id;
-	return an_packet;
 }
 
 int decode_boot_mode_packet(boot_mode_packet_t *boot_mode_packet, an_packet_t *an_packet)
@@ -93,11 +91,11 @@ int decode_boot_mode_packet(boot_mode_packet_t *boot_mode_packet, an_packet_t *a
 	else return 1;
 }
 
-an_packet_t *encode_boot_mode_packet(boot_mode_packet_t *boot_mode_packet)
+void encode_boot_mode_packet(an_packet_t *an_packet, boot_mode_packet_t *boot_mode_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(1, packet_id_boot_mode);
+	an_packet->id = packet_id_boot_mode;
+	an_packet->length = 1;
 	an_packet->data[0] = boot_mode_packet->boot_mode;
-	return an_packet;
 }
 
 int decode_device_information_packet(device_information_packet_t *device_information_packet, an_packet_t *an_packet)
@@ -113,20 +111,20 @@ int decode_device_information_packet(device_information_packet_t *device_informa
 	else return 1;
 }
 
-an_packet_t *encode_restore_factory_settings_packet()
+void encode_restore_factory_settings_packet(an_packet_t *an_packet)
 {
 	uint32_t verification = 0x85429E1C;
-	an_packet_t *an_packet = an_packet_allocate(4, packet_id_restore_factory_settings);
+	an_packet->id = packet_id_restore_factory_settings;
+	an_packet->length = 4;
 	memcpy(&an_packet->data[0], &verification, sizeof(uint32_t));
-	return an_packet;
 }
 
-an_packet_t *encode_reset_packet()
+void encode_reset_packet(an_packet_t *an_packet)
 {
 	uint32_t verification = 0x21057A7E;
-	an_packet_t *an_packet = an_packet_allocate(4, packet_id_reset);
+	an_packet->id = packet_id_reset;
+	an_packet->length = 4;
 	memcpy(&an_packet->data[0], &verification, sizeof(uint32_t));
-	return an_packet;
 }
  
 int decode_system_state_packet(system_state_packet_t *system_state_packet, an_packet_t *an_packet)
@@ -317,7 +315,7 @@ int decode_utm_position_packet(utm_position_packet_t *utm_position_packet, an_pa
 {
 	if(an_packet->id == packet_id_utm_position && an_packet->length == 25)
 	{
-		memcpy(&utm_position_packet->position, &an_packet->data[0], 3*sizeof(double));
+		memcpy(&utm_position_packet->position[0], &an_packet->data[0], 3*sizeof(double));
 		utm_position_packet->zone = an_packet->data[24];
 		return 0;
 	}
@@ -328,7 +326,7 @@ int decode_ned_velocity_packet(ned_velocity_packet_t *ned_velocity_packet, an_pa
 {
 	if(an_packet->id == packet_id_ned_velocity && an_packet->length == 12)
 	{
-		memcpy(&ned_velocity_packet->velocity, &an_packet->data[0], 3*sizeof(float));
+		memcpy(&ned_velocity_packet->velocity[0], &an_packet->data[0], 3*sizeof(float));
 		return 0;
 	}
 	else return 1;
@@ -338,7 +336,7 @@ int decode_body_velocity_packet(body_velocity_packet_t *body_velocity_packet, an
 {
 	if(an_packet->id == packet_id_body_velocity && an_packet->length == 12)
 	{
-		memcpy(&body_velocity_packet->velocity, &an_packet->data[0], 3*sizeof(float));
+		memcpy(&body_velocity_packet->velocity[0], &an_packet->data[0], 3*sizeof(float));
 		return 0;
 	}
 	else return 1;
@@ -428,17 +426,14 @@ int decode_external_position_velocity_packet(external_position_velocity_packet_t
 	else return 1;
 }
 
-an_packet_t *encode_external_position_velocity_packet(external_position_velocity_packet_t *external_position_velocity_packet)
+void encode_external_position_velocity_packet(an_packet_t *an_packet, external_position_velocity_packet_t *external_position_velocity_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(60, packet_id_external_position_velocity);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_position_velocity_packet->position[0], 3*sizeof(double));
-		memcpy(&an_packet->data[24], &external_position_velocity_packet->velocity[0], 3*sizeof(float));
-		memcpy(&an_packet->data[36], &external_position_velocity_packet->position_standard_deviation[0], 3*sizeof(float));
-		memcpy(&an_packet->data[48], &external_position_velocity_packet->velocity_standard_deviation[0], 3*sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_position_velocity;
+	an_packet->length = 60;
+	memcpy(&an_packet->data[0], &external_position_velocity_packet->position[0], 3*sizeof(double));
+	memcpy(&an_packet->data[24], &external_position_velocity_packet->velocity[0], 3*sizeof(float));
+	memcpy(&an_packet->data[36], &external_position_velocity_packet->position_standard_deviation[0], 3*sizeof(float));
+	memcpy(&an_packet->data[48], &external_position_velocity_packet->velocity_standard_deviation[0], 3*sizeof(float));
 }
 
 int decode_external_position_packet(external_position_packet_t *external_position_packet, an_packet_t *an_packet)
@@ -452,15 +447,12 @@ int decode_external_position_packet(external_position_packet_t *external_positio
 	else return 1;
 }
 
-an_packet_t *encode_external_position_packet(external_position_packet_t *external_position_packet)
+void encode_external_position_packet(an_packet_t *an_packet, external_position_packet_t *external_position_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(36, packet_id_external_position);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_position_packet->position[0], 3*sizeof(double));
-		memcpy(&an_packet->data[24], &external_position_packet->standard_deviation[0], 3*sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_position;
+	an_packet->length = 36;
+	memcpy(&an_packet->data[0], &external_position_packet->position[0], 3*sizeof(double));
+	memcpy(&an_packet->data[24], &external_position_packet->standard_deviation[0], 3*sizeof(float));
 }
 
 int decode_external_velocity_packet(external_velocity_packet_t *external_velocity_packet, an_packet_t *an_packet)
@@ -474,15 +466,12 @@ int decode_external_velocity_packet(external_velocity_packet_t *external_velocit
 	else return 1;
 }
 
-an_packet_t *encode_external_velocity_packet(external_velocity_packet_t *external_velocity_packet)
+void encode_external_velocity_packet(an_packet_t *an_packet, external_velocity_packet_t *external_velocity_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(24, packet_id_external_velocity);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_velocity_packet->velocity[0], 3*sizeof(float));
-		memcpy(&an_packet->data[12], &external_velocity_packet->standard_deviation[0], 3*sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_velocity;
+	an_packet->length = 24;
+	memcpy(&an_packet->data[0], &external_velocity_packet->velocity[0], 3*sizeof(float));
+	memcpy(&an_packet->data[12], &external_velocity_packet->standard_deviation[0], 3*sizeof(float));
 }
 
 int decode_external_body_velocity_packet(external_body_velocity_packet_t *external_body_velocity_packet, an_packet_t *an_packet)
@@ -496,15 +485,12 @@ int decode_external_body_velocity_packet(external_body_velocity_packet_t *extern
 	else return 1;
 }
 
-an_packet_t *encode_external_body_velocity_packet(external_body_velocity_packet_t *external_body_velocity_packet)
+void encode_external_body_velocity_packet(an_packet_t *an_packet, external_body_velocity_packet_t *external_body_velocity_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(16, packet_id_external_body_velocity);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_body_velocity_packet->velocity[0], 3*sizeof(float));
-		memcpy(&an_packet->data[12], &external_body_velocity_packet->standard_deviation, sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_body_velocity;
+	an_packet->length = 16;
+	memcpy(&an_packet->data[0], &external_body_velocity_packet->velocity[0], 3*sizeof(float));
+	memcpy(&an_packet->data[12], &external_body_velocity_packet->standard_deviation, sizeof(float));
 }
 
 int decode_external_heading_packet(external_heading_packet_t *external_heading_packet, an_packet_t *an_packet)
@@ -518,15 +504,12 @@ int decode_external_heading_packet(external_heading_packet_t *external_heading_p
 	else return 1;
 }
 
-an_packet_t *encode_external_heading_packet(external_heading_packet_t *external_heading_packet)
+void encode_external_heading_packet(an_packet_t *an_packet, external_heading_packet_t *external_heading_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(8, packet_id_external_heading);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_heading_packet->heading, sizeof(float));
-		memcpy(&an_packet->data[4], &external_heading_packet->standard_deviation, sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_heading;
+	an_packet->length = 8;
+	memcpy(&an_packet->data[0], &external_heading_packet->heading, sizeof(float));
+	memcpy(&an_packet->data[4], &external_heading_packet->standard_deviation, sizeof(float));
 }
 
 int decode_running_time_packet(running_time_packet_t *running_time_packet, an_packet_t *an_packet)
@@ -575,15 +558,12 @@ int decode_external_time_packet(external_time_packet_t *external_time_packet, an
 	else return 1;
 }
 
-an_packet_t *encode_external_time_packet(external_time_packet_t *external_time_packet)
+void encode_external_time_packet(an_packet_t *an_packet, external_time_packet_t *external_time_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(8, packet_id_external_time);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_time_packet->unix_time_seconds, sizeof(float));
-		memcpy(&an_packet->data[4], &external_time_packet->microseconds, sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_time;
+	an_packet->length = 8;
+	memcpy(&an_packet->data[0], &external_time_packet->unix_time_seconds, sizeof(float));
+	memcpy(&an_packet->data[4], &external_time_packet->microseconds, sizeof(float));
 }
 
 int decode_external_depth_packet(external_depth_packet_t *external_depth_packet, an_packet_t *an_packet)
@@ -597,15 +577,12 @@ int decode_external_depth_packet(external_depth_packet_t *external_depth_packet,
 	else return 1;
 }
 
-an_packet_t *encode_external_depth_packet(external_depth_packet_t *external_depth_packet)
+void encode_external_depth_packet(an_packet_t *an_packet, external_depth_packet_t *external_depth_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(8, packet_id_external_depth);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_depth_packet->depth, sizeof(float));
-		memcpy(&an_packet->data[4], &external_depth_packet->standard_deviation, sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_depth;
+	an_packet->length = 8;
+	memcpy(&an_packet->data[0], &external_depth_packet->depth, sizeof(float));
+	memcpy(&an_packet->data[4], &external_depth_packet->standard_deviation, sizeof(float));
 }
 
 int decode_geoid_height_packet(geoid_height_packet_t *geoid_height_packet, an_packet_t *an_packet)
@@ -629,15 +606,12 @@ int decode_external_pitot_pressure_packet(external_pitot_pressure_packet_t *exte
 	else return 1;
 }
 
-an_packet_t *encode_external_pitot_pressure_packet(external_pitot_pressure_packet_t *external_pitot_pressure_packet)
+void encode_external_pitot_pressure_packet(an_packet_t *an_packet, external_pitot_pressure_packet_t *external_pitot_pressure_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(8, packet_id_external_pitot_pressure);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], &external_pitot_pressure_packet->differential_pressure, sizeof(float));
-		memcpy(&an_packet->data[4], &external_pitot_pressure_packet->outside_air_temperature, sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_external_pitot_pressure;
+	an_packet->length = 8;
+	memcpy(&an_packet->data[0], &external_pitot_pressure_packet->differential_pressure, sizeof(float));
+	memcpy(&an_packet->data[4], &external_pitot_pressure_packet->outside_air_temperature, sizeof(float));
 }
 
 int decode_wind_estimation_packet(wind_estimation_packet_t *wind_estimation_packet, an_packet_t *an_packet)
@@ -675,16 +649,13 @@ int decode_packet_timer_period_packet(packet_timer_period_packet_t *packet_timer
     else return 1;
 }
 
-an_packet_t *encode_packet_timer_period_packet(packet_timer_period_packet_t *packet_timer_period_packet)
+void encode_packet_timer_period_packet(an_packet_t *an_packet, packet_timer_period_packet_t *packet_timer_period_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(4, packet_id_packet_timer_period);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = packet_timer_period_packet->permanent > 0;
-		an_packet->data[1] = packet_timer_period_packet->utc_synchronisation > 0;
-		memcpy(&an_packet->data[2], &packet_timer_period_packet->packet_timer_period, sizeof(uint16_t));
-	}
-    return an_packet;
+    an_packet->id = packet_id_packet_timer_period;
+    an_packet->length = 4;
+    an_packet->data[0] = packet_timer_period_packet->permanent;
+    an_packet->data[1] = packet_timer_period_packet->utc_synchronisation;
+    memcpy(&an_packet->data[2], &packet_timer_period_packet->packet_timer_period, sizeof(uint16_t));
 }
 
 int decode_packet_periods_packet(packet_periods_packet_t *packet_periods_packet, an_packet_t *an_packet)
@@ -709,26 +680,22 @@ int decode_packet_periods_packet(packet_periods_packet_t *packet_periods_packet,
     else return 1;
 }
 
-an_packet_t *encode_packet_periods_packet(packet_periods_packet_t *packet_periods_packet)
+void encode_packet_periods_packet(an_packet_t *an_packet, packet_periods_packet_t *packet_periods_packet)
 {
     int i;
-    an_packet_t *an_packet = an_packet_allocate(252, packet_id_packet_periods);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = packet_periods_packet->permanent > 0;
-		an_packet->data[1] = packet_periods_packet->clear_existing_packets;
-		for(i = 0; i < MAXIMUM_PACKET_PERIODS; i++)
-		{
-			if(packet_periods_packet->packet_periods[i].packet_id)
-			{
-				an_packet->data[2 + 5*i] = packet_periods_packet->packet_periods[i].packet_id;
-				memcpy(&an_packet->data[2 + 5*i + 1], &packet_periods_packet->packet_periods[i].period, sizeof(uint32_t));
-			}
-			else break;
-		}
-		an_packet->length = 2 + 5*i;
-	}
-    return an_packet;
+    an_packet->id = packet_id_packet_periods;
+    an_packet->data[0] = packet_periods_packet->permanent;
+    an_packet->data[1] = packet_periods_packet->clear_existing_packets;
+    for(i = 0; i < MAXIMUM_PACKET_PERIODS; i++)
+    {
+        if(packet_periods_packet->packet_periods[i].packet_id)
+        {
+            an_packet->data[2 + 5*i] = packet_periods_packet->packet_periods[i].packet_id;
+            memcpy(&an_packet->data[2 + 5*i + 1], &packet_periods_packet->packet_periods[i].period, sizeof(uint32_t));
+        }
+        else break;
+    }
+    an_packet->length = 2 + 5*i;
 }
 
 int decode_baud_rates_packet(baud_rates_packet_t *baud_rates_packet, an_packet_t *an_packet)
@@ -739,24 +706,20 @@ int decode_baud_rates_packet(baud_rates_packet_t *baud_rates_packet, an_packet_t
 		memcpy(&baud_rates_packet->primary_baud_rate, &an_packet->data[1], sizeof(uint32_t));
 		memcpy(&baud_rates_packet->gpio_1_2_baud_rate, &an_packet->data[5], sizeof(uint32_t));
 		memcpy(&baud_rates_packet->gpio_3_4_baud_rate, &an_packet->data[9], sizeof(uint32_t));
-		memcpy(&baud_rates_packet->reserved, &an_packet->data[13], sizeof(uint32_t));
 		return 0;
 	}
 	else return 1;
 }
 
-an_packet_t *encode_baud_rates_packet(baud_rates_packet_t *baud_rates_packet)
+void encode_baud_rates_packet(an_packet_t *an_packet, baud_rates_packet_t *baud_rates_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(17, packet_id_baud_rates);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = baud_rates_packet->permanent;
-		memcpy(&an_packet->data[1], &baud_rates_packet->primary_baud_rate, sizeof(uint32_t));
-		memcpy(&an_packet->data[5], &baud_rates_packet->gpio_1_2_baud_rate, sizeof(uint32_t));
-		memcpy(&an_packet->data[9], &baud_rates_packet->gpio_3_4_baud_rate, sizeof(uint32_t));
-		memcpy(&an_packet->data[13], &baud_rates_packet->reserved, sizeof(uint32_t));
-	}
-	return an_packet;
+	an_packet->id = packet_id_baud_rates;
+	an_packet->length = 17;
+	an_packet->data[0] = baud_rates_packet->permanent;
+	memcpy(&an_packet->data[1], &baud_rates_packet->primary_baud_rate, sizeof(uint32_t));
+	memcpy(&an_packet->data[5], &baud_rates_packet->gpio_1_2_baud_rate, sizeof(uint32_t));
+	memcpy(&an_packet->data[9], &baud_rates_packet->gpio_3_4_baud_rate, sizeof(uint32_t));
+	memset(&an_packet->data[13], 0, sizeof(uint32_t));
 }
 
 int decode_sensor_ranges_packet(sensor_ranges_packet_t *sensor_ranges_packet, an_packet_t *an_packet)
@@ -769,14 +732,11 @@ int decode_sensor_ranges_packet(sensor_ranges_packet_t *sensor_ranges_packet, an
 	else return 1;
 }
 
-an_packet_t *encode_sensor_ranges_packet(sensor_ranges_packet_t *sensor_ranges_packet)
+void encode_sensor_ranges_packet(an_packet_t *an_packet, sensor_ranges_packet_t *sensor_ranges_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(4, packet_id_sensor_ranges);
-	if(an_packet != NULL)
-	{
-		memcpy(an_packet->data, sensor_ranges_packet, 4*sizeof(uint8_t));
-	}
-	return an_packet;
+	an_packet->id = packet_id_sensor_ranges;
+	an_packet->length = 4;
+	memcpy(an_packet->data, sensor_ranges_packet, 4*sizeof(uint8_t));
 }
 
 int decode_installation_alignment_packet(installation_alignment_packet_t *installation_alignment_packet, an_packet_t *an_packet)
@@ -793,18 +753,15 @@ int decode_installation_alignment_packet(installation_alignment_packet_t *instal
 	else return 1;
 }
 
-an_packet_t *encode_installation_alignment_packet(installation_alignment_packet_t *installation_alignment_packet)
+void encode_installation_alignment_packet(an_packet_t *an_packet, installation_alignment_packet_t *installation_alignment_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(73, packet_id_installation_alignment);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = installation_alignment_packet->permanent;
-		memcpy(&an_packet->data[1], &installation_alignment_packet->alignment_dcm[0][0], 9*sizeof(float));
-		memcpy(&an_packet->data[37], &installation_alignment_packet->gnss_antenna_offset[0], 3*sizeof(float));
-		memcpy(&an_packet->data[49], &installation_alignment_packet->odometer_offset[0], 3*sizeof(float));
-		memcpy(&an_packet->data[61], &installation_alignment_packet->external_data_offset[0], 3*sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_installation_alignment;
+	an_packet->length = 73;
+	an_packet->data[0] = installation_alignment_packet->permanent;
+	memcpy(&an_packet->data[1], &installation_alignment_packet->alignment_dcm[0][0], 9*sizeof(float));
+	memcpy(&an_packet->data[37], &installation_alignment_packet->gnss_antenna_offset[0], 3*sizeof(float));
+	memcpy(&an_packet->data[49], &installation_alignment_packet->odometer_offset[0], 3*sizeof(float));
+	memcpy(&an_packet->data[61], &installation_alignment_packet->external_data_offset[0], 3*sizeof(float));
 }
 
 int decode_filter_options_packet(filter_options_packet_t *filter_options_packet, an_packet_t *an_packet)
@@ -817,15 +774,12 @@ int decode_filter_options_packet(filter_options_packet_t *filter_options_packet,
 	else return 1;
 }
 
-an_packet_t *encode_filter_options_packet(filter_options_packet_t *filter_options_packet)
+void encode_filter_options_packet(an_packet_t *an_packet, filter_options_packet_t *filter_options_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(17, packet_id_filter_options);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], filter_options_packet, 9*sizeof(uint8_t));
-		memset(&an_packet->data[9], 0, 8*sizeof(uint8_t));
-	}
-	return an_packet;
+	an_packet->id = packet_id_filter_options;
+	an_packet->length = 17;
+	memcpy(&an_packet->data[0], filter_options_packet, 9*sizeof(uint8_t));
+	memset(&an_packet->data[6], 0, 8*sizeof(uint8_t));
 }
 
 int decode_gpio_configuration_packet(gpio_configuration_packet_t *gpio_configuration_packet, an_packet_t *an_packet)
@@ -838,15 +792,12 @@ int decode_gpio_configuration_packet(gpio_configuration_packet_t *gpio_configura
 	else return 1;
 }
 
-an_packet_t *encode_gpio_configuration_packet(gpio_configuration_packet_t *gpio_configuration_packet)
+void encode_gpio_configuration_packet(an_packet_t *an_packet, gpio_configuration_packet_t *gpio_configuration_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(13, packet_id_gpio_configuration);
-	if(an_packet != NULL)
-	{
-		memcpy(&an_packet->data[0], gpio_configuration_packet, 5*sizeof(uint8_t));
-		memset(&an_packet->data[5], 0, 8*sizeof(uint8_t));
-	}
-	return an_packet;
+	an_packet->id = packet_id_gpio_configuration;
+	an_packet->length = 13;
+	memcpy(&an_packet->data[0], gpio_configuration_packet, 5*sizeof(uint8_t));
+	memset(&an_packet->data[5], 0, 8*sizeof(uint8_t));
 }
 
 int decode_magnetic_calibration_values_packet(magnetic_calibration_values_packet_t *magnetic_calibration_values_packet, an_packet_t *an_packet)
@@ -861,26 +812,20 @@ int decode_magnetic_calibration_values_packet(magnetic_calibration_values_packet
 	else return 1;
 }
 
-an_packet_t *encode_magnetic_calibration_values_packet(magnetic_calibration_values_packet_t *magnetic_calibration_values_packet)
+void encode_magnetic_calibration_values_packet(an_packet_t *an_packet, magnetic_calibration_values_packet_t *magnetic_calibration_values_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(49, packet_id_magnetic_calibration_values);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = magnetic_calibration_values_packet->permanent;
-		memcpy(&an_packet->data[1], magnetic_calibration_values_packet->hard_iron, 3*sizeof(float));
-		memcpy(&an_packet->data[13], magnetic_calibration_values_packet->soft_iron, 9*sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_magnetic_calibration_values;
+	an_packet->length = 49;
+	an_packet->data[0] = magnetic_calibration_values_packet->permanent;
+	memcpy(&an_packet->data[1], magnetic_calibration_values_packet->hard_iron, 3*sizeof(float));
+	memcpy(&an_packet->data[13], magnetic_calibration_values_packet->soft_iron, 9*sizeof(float));
 }
 
-an_packet_t *encode_magnetic_calibration_configuration_packet(magnetic_calibration_configuration_packet_t *magnetic_calibration_configuration_packet)
+void encode_magnetic_calibration_configuration_packet(an_packet_t *an_packet, magnetic_calibration_configuration_packet_t *magnetic_calibration_configuration_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(1, packet_id_magnetic_calibration_configuration);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = magnetic_calibration_configuration_packet->magnetic_calibration_action;
-	}
-	return an_packet;
+	an_packet->id = packet_id_magnetic_calibration_configuration;
+	an_packet->length = 1;
+	an_packet->data[0] = magnetic_calibration_configuration_packet->magnetic_calibration_action;
 }
 
 int decode_magnetic_calibration_status_packet(magnetic_calibration_status_packet_t *magnetic_calibration_status_packet, an_packet_t *an_packet)
@@ -907,27 +852,21 @@ int decode_odometer_configuration_packet(odometer_configuration_packet_t *odomet
 	else return 1;
 }
 
-an_packet_t *encode_odometer_configuration_packet(odometer_configuration_packet_t *odometer_configuration_packet)
+void encode_odometer_configuration_packet(an_packet_t *an_packet, odometer_configuration_packet_t *odometer_configuration_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(8, packet_id_odometer_configuration);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = odometer_configuration_packet->permanent;
-		an_packet->data[1] = odometer_configuration_packet->automatic_calibration;
-		memset(&an_packet->data[2], 0, 2*sizeof(uint8_t));
-		memcpy(&an_packet->data[4], &odometer_configuration_packet->pulse_length, sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_odometer_configuration;
+	an_packet->length = 8;
+	an_packet->data[0] = odometer_configuration_packet->permanent;
+	an_packet->data[1] = odometer_configuration_packet->automatic_calibration;
+	memset(&an_packet->data[2], 0, 2*sizeof(uint8_t));
+	memcpy(&an_packet->data[4], &odometer_configuration_packet->pulse_length, sizeof(float));
 }
 
-an_packet_t *encode_zero_alignment_packet(zero_alignment_packet_t *zero_alignment_packet)
+void encode_zero_alignment_packet(an_packet_t *an_packet, zero_alignment_packet_t *zero_alignment_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(1, packet_id_zero_alignment);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = zero_alignment_packet->permanent;
-	}
-	return an_packet;
+	an_packet->id = packet_id_zero_alignment;
+	an_packet->length = 1;
+	an_packet->data[0] = zero_alignment_packet->permanent;
 }
 
 int decode_heave_offset_packet(heave_offset_packet_t *heave_offset_packet, an_packet_t *an_packet)
@@ -944,18 +883,15 @@ int decode_heave_offset_packet(heave_offset_packet_t *heave_offset_packet, an_pa
 	else return 1;
 }
 
-an_packet_t *encode_heave_offset_packet(heave_offset_packet_t *heave_offset_packet)
+void encode_heave_offset_packet(an_packet_t *an_packet, heave_offset_packet_t *heave_offset_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(49, packet_id_odometer_configuration);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = heave_offset_packet->permanent;
-		memcpy(&an_packet->data[1], &heave_offset_packet->heave_point_1_offset[0], 3*sizeof(float));
-		memcpy(&an_packet->data[13], &heave_offset_packet->heave_point_2_offset[0], 3*sizeof(float));
-		memcpy(&an_packet->data[25], &heave_offset_packet->heave_point_3_offset[0], 3*sizeof(float));
-		memcpy(&an_packet->data[37], &heave_offset_packet->heave_point_4_offset[0], 3*sizeof(float));
-	}
-	return an_packet;
+	an_packet->id = packet_id_heave_offset;
+	an_packet->length = 49;
+	an_packet->data[0] = heave_offset_packet->permanent;
+	memcpy(&an_packet->data[1], &heave_offset_packet->heave_point_1_offset[0], 3*sizeof(float));
+	memcpy(&an_packet->data[13], &heave_offset_packet->heave_point_2_offset[0], 3*sizeof(float));
+	memcpy(&an_packet->data[25], &heave_offset_packet->heave_point_3_offset[0], 3*sizeof(float));
+	memcpy(&an_packet->data[37], &heave_offset_packet->heave_point_4_offset[0], 3*sizeof(float));
 }
 
 int decode_nmea_output_configuration_packet(nmea_output_configuration_packet_t *nmea_output_configuration_packet, an_packet_t *an_packet)
@@ -975,21 +911,18 @@ int decode_nmea_output_configuration_packet(nmea_output_configuration_packet_t *
 	else return 1;
 }
 
-an_packet_t *encode_nmea_output_configuration_packet(nmea_output_configuration_packet_t *nmea_output_configuration_packet)
+void encode_nmea_output_configuration_packet(an_packet_t *an_packet, nmea_output_configuration_packet_t *nmea_output_configuration_packet)
 {
-	an_packet_t *an_packet = an_packet_allocate(13, packet_id_nmea_output_configuration);
-	if(an_packet != NULL)
-	{
-		an_packet->data[0] = nmea_output_configuration_packet->permanent;
-		an_packet->data[1] = nmea_output_configuration_packet->nmea_period;
-		an_packet->data[2] = nmea_output_configuration_packet->gpzda_enabled;
-		an_packet->data[3] = nmea_output_configuration_packet->gpgga_enabled;
-		an_packet->data[4] = nmea_output_configuration_packet->gpvtg_enabled;
-		an_packet->data[5] = nmea_output_configuration_packet->gprmc_enabled;
-		an_packet->data[6] = nmea_output_configuration_packet->gphdt_enabled;
-		an_packet->data[7] = nmea_output_configuration_packet->pashr_enabled;
-		memset(&an_packet->data[8], 0, 5*sizeof(uint8_t));
-	}
-	return an_packet;
+	an_packet->id = packet_id_nmea_output_configuration;
+	an_packet->length = 13;
+	an_packet->data[0] = nmea_output_configuration_packet->permanent;
+	an_packet->data[1] = nmea_output_configuration_packet->nmea_period;
+	an_packet->data[2] = nmea_output_configuration_packet->gpzda_enabled;
+	an_packet->data[3] = nmea_output_configuration_packet->gpgga_enabled;
+	an_packet->data[4] = nmea_output_configuration_packet->gpvtg_enabled;
+	an_packet->data[5] = nmea_output_configuration_packet->gprmc_enabled;
+	an_packet->data[6] = nmea_output_configuration_packet->gphdt_enabled;
+	an_packet->data[7] = nmea_output_configuration_packet->pashr_enabled;
+	memset(&an_packet->data[8], 0, 5*sizeof(uint8_t));
 }
 

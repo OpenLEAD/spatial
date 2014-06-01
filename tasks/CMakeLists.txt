@@ -2,7 +2,9 @@
 
 include(spatialTaskLib)
 ADD_LIBRARY(${SPATIAL_TASKLIB_NAME} SHARED 
-    ${SPATIAL_TASKLIB_SOURCES})
+    ${SPATIAL_TASKLIB_SOURCES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/an_packet_protocol.c 
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatial_packets.c)
 add_dependencies(${SPATIAL_TASKLIB_NAME}
     regen-typekit)
 

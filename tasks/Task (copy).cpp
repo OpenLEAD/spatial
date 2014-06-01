@@ -42,47 +42,44 @@ bool Task::startHook()
 void Task::updateHook()
 {
     TaskBase::updateHook();
-	int data_count = 0;
-	int bytes_to_copy;
 
+	int index;
+	int len;
 	base::Time time = base::Time::now();
 
 	int k = 0;
 	
-	if(_com_input.read(rawpacket)){
+	while (_com_input.read(newpacket) == RTT::NewData){
 			RTT::log(RTT::Warning) << "NEW DATA " << RTT::endlog();
-		//rawpacket.data.insert( rawpacket.data.end(), newpacket.data.begin(), newpacket.data.end() );
-		data_count = 0;
-		
-		int rawpacketsize = rawpacket.data.size();
-		while ( data_count < rawpacketsize ){
+		rawpacket.data.insert( rawpacket.data.end(), newpacket.data.begin(), newpacket.data.end() );
+		index = 0;
+		len = rawpacket.data.size();
+		while ( len > 0 ){
 
-			RTT::log(RTT::Warning) << k++ << ") bytes_received = " << an_decoder_size(&an_decoder) << " ou " << rawpacketsize - data_count << RTT::endlog();
+			RTT::log(RTT::Warning) << k++ << ") bytes_received = " << an_decoder_size(&an_decoder) << " ou " << len << RTT::endlog();
 
-			/* calculate the number of bytes to copy */
-			bytes_to_copy = an_decoder_size(&an_decoder);
-			if(bytes_to_copy > rawpacketsize - data_count) 
-				bytes_to_copy = rawpacketsize - data_count;
-					
-			RTT::log(RTT::Warning) << "data_count = " << data_count << ", bytes_received = " << bytes_received << RTT::endlog();
-
-			/* fill the decode buffer with the data */
-			memcpy(an_decoder_pointer(&an_decoder), &rawpacket.data[data_count], bytes_to_copy*sizeof(uint8_t));
-			an_decoder_increment(&an_decoder, bytes_to_copy);
+			bytes_received = an_decoder_size(&an_decoder) < len ? an_decoder_size(&an_decoder) : len;
 			
-			/* increase the iterator by the number of bytes copied */
-			data_count += bytes_to_copy;
+//			for(int i=0;i<bytes_received;i++)
+//				*(an_decoder_pointer(&an_decoder)+i) = rawpacket.data[index+i];
+			
+			RTT::log(RTT::Warning) << "index = " << index << ", bytes_received = " << bytes_received << RTT::endlog();
+			memcpy(an_decoder_pointer(&an_decoder), &(rawpacket.data[index]),bytes_received);
+			index+=bytes_received;
+
+			/* increment the decode buffer length by the number of bytes received */
+			an_decoder_increment(&an_decoder, bytes_received);
 
 			/* decode all the packets in the buffer */
-			while (an_packet_decode(&an_decoder, &an_packet))
+			while ((an_packet = an_packet_decode(&an_decoder)) != NULL)
 			{
-				//rawpacket.data.erase(rawpacket.data.begin(),rawpacket.data.begin()+an_packet_size(&an_packet));
+				rawpacket.data.erase(rawpacket.data.begin(),rawpacket.data.begin()+an_packet_size(an_packet));
 				RTT::log(RTT::Warning) << "(an_packet = an_packet_decode(&an_decoder)) != NULL" << RTT::endlog();
-				if (an_packet.id == packet_id_system_state) /* system state packet */
+				if (an_packet->id == packet_id_system_state) /* system state packet */
 				{
 					/* copy all the binary data into the typedef struct for the packet */
 					/* this allows easy access to all the different values             */
-					if(decode_system_state_packet(&system_state_packet, &an_packet) == 0)
+					if(decode_system_state_packet(&system_state_packet, an_packet) == 0)
 					{
 
 						angle.time = time;
@@ -94,11 +91,11 @@ void Task::updateHook()
 						RTT::log(RTT::Warning) << "WRITTEN!" << RTT::endlog();
 					}
 				}
-				else if (an_packet.id == packet_id_raw_sensors) /* raw sensors packet */
+				else if (an_packet->id == packet_id_raw_sensors) /* raw sensors packet */
 				{
 					/* copy all the binary data into the typedef struct for the packet */
 					/* this allows easy access to all the different values             */
-					if(decode_raw_sensors_packet(&raw_sensors_packet, &an_packet) == 0)
+					if(decode_raw_sensors_packet(&raw_sensors_packet, an_packet) == 0)
 					{
 						imu.time = time;
 						imu.acc = base::Vector3d(raw_sensors_packet.accelerometers[0],raw_sensors_packet.accelerometers[1],raw_sensors_packet.accelerometers[2]);
@@ -109,10 +106,15 @@ void Task::updateHook()
 				else
 				{
 					
-					RTT::log(RTT::Warning) << "Packet ID " << an_packet.id << " of Length " <<  an_packet.length << RTT::endlog();
+					RTT::log(RTT::Warning) << "Packet ID " << an_packet->id << " of Length " << an_packet->length << RTT::endlog();
 				}
+	
+				/* Ensure that you free the an_packet when your done with it or you will leak memory */
+				an_packet_free(&an_packet);
 			}
 
+			
+			len -= bytes_received;
 		}
 	}
 
