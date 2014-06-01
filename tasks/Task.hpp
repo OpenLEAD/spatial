@@ -4,6 +4,8 @@
 #define SPATIAL_TASK_TASK_HPP
 
 #include "spatial/TaskBase.hpp"
+#include "spatial/an_packet_protocol.h"
+#include "spatial/spatial_packets.h"
 
 namespace spatial {
 
@@ -25,8 +27,20 @@ namespace spatial {
     {
 	friend class TaskBase;
     protected:
+	iodrivers_base::RawPacket rawpacket;
 
+	base::Pose pose;
+	base::samples::IMUSensors imu;
 
+	an_decoder_t an_decoder;
+	an_packet_t *an_packet;
+
+	system_state_packet_t system_state_packet;
+	raw_sensors_packet_t raw_sensors_packet;
+
+	
+
+	int bytes_received;
 
     public:
         /** TaskContext constructor for Task
